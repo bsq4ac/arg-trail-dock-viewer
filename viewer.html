@@ -1,0 +1,48 @@
+﻿<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ARG Trail Dock Log Viewer</title>
+  <link rel="stylesheet" href="viewer.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="topLeft">
+      <div class="title">ARG Trail Dock Log Viewer</div>
+      <div class="hint">閲覧専用: ローカルJSON読込 / localStorage保存 / レポート・ページ一覧表示</div>
+    </div>
+    <div class="topRight">
+      <div id="viewerStats" class="storageStat">🕒--:--:-- | 🎮0 🎖0 🏆0</div>
+      <button id="btnHelp" class="secondary">このページについて</button>
+      <button id="btnLoadJson" class="secondary">JSON読込</button>
+      <button id="btnClearLocal" class="secondary">ローカル保存削除</button>
+      <input id="fileJson" type="file" accept=".json,application/json" style="display:none;" />
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="card">
+      <div class="cardHead">
+        <h2>ゲーム一覧</h2>
+        <div id="viewerSource" class="small">未読込</div>
+      </div>
+      <div id="gamesList" class="games"></div>
+    </section>
+    <section class="card">
+      <div class="cardHead">
+        <h2>選択中ゲーム</h2>
+        <div id="activeGameMeta" class="activeMeta"></div>
+      </div>
+      <div id="activeGameArea" class="active"></div>
+    </section>
+  </main>
+
+  <div class="small" style="padding: 0 12px 12px; opacity: 0.75;">
+    拡張機能の補助ツールです。表示内容の完全性・最新性・正確性は保証されません。
+  </div>
+
+  <script src="viewer_core.js"></script>
+  <script src="viewer.js"></script>
+</body>
+</html>

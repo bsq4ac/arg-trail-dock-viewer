@@ -1,0 +1,401 @@
+:root { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e7eaf0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow: hidden;
+}
+.top { padding: 14px 16px; border-bottom: 1px solid #222837; }
+.title { font-size: 18px; font-weight: 700; }
+.hint { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: 480px 1fr;
+  gap: 12px;
+  padding: 12px;
+  align-items: start;
+  /* ゲーム一覧が伸びても右側の「選択中ゲーム」が遠くならないよう、
+     グリッド自体は画面内に収めて各カード内スクロールにする */
+  flex: 1;
+  min-height: 0;
+}
+.card {
+  background: #151925;
+  border: 1px solid #222837;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,.25);
+  overflow: auto;
+  /* ゲーム一覧カード用：flexで内部スクロール可能に */
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+}
+
+.cardHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+}
+
+.cardHead h2{ margin: 0; }
+.activeMeta{
+  font-size: 12px;
+  opacity: 0.75;
+  text-align: right;
+  white-space: pre-line;
+}
+
+.games{
+  /* 一覧が増えてもページ全体が縦伸びしないように */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 4px 2px 2px;
+}
+
+h2 { margin: 0 0 10px; font-size: 14px; }
+.gameItem {
+  border: 1px solid #222837;
+  border-radius: 10px;
+  padding: 10px;
+  background: #121625;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+}
+.gameItem .giTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 36px; /* ボタン有無で高さが変わらないように */
+  position: relative;
+}
+.gameItem .name { font-weight: 700; }
+.gameItem .giTop .name{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 96px; /* ボタン群の重なり分を確保 */
+}
+.gameItem .rowBtns{
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+.gameItem .giBottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.gameItem .giBottomLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+  min-height: 20px; /* トグルの有無で高さが変わらないように */
+}
+.gameItem .giBottomRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+  flex: 1;
+}
+.gameItem .meta { font-size: 12px; opacity: 0.8; }
+.rowBtns { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
+.rowBtns button { white-space: nowrap; }
+
+/* 計測状態表示 */
+button {
+  background: #2a3550;
+  border: 1px solid #3a4768;
+  color: #e7eaf0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+button:hover { filter: brightness(1.1); }
+button.secondary { background: #1a2236; }
+button.danger { background: #4a1f2a; border-color: #6a2c3a; }
+
+input {
+  background: #0f1115;
+  border: 1px solid #222837;
+  color: #e7eaf0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.active { display: grid; gap: 12px; }
+.kv { display: grid; grid-template-columns: 180px 1fr; gap: 8px 10px; align-items: center; }
+.small { font-size: 12px; opacity: 0.85; }
+hr { border: none; border-top: 1px solid #222837; margin: 10px 0; }
+.inline { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* ---------- modal ---------- */
+.modalOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 9999;
+}
+.modal{
+  background: #151925;
+  border: 1px solid #222837;
+  border-radius: 14px;
+  width: min(920px, 96vw);
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0,0,0,.4);
+  display: flex;
+  flex-direction: column;
+}
+.modalHead{
+  padding: 12px 14px;
+  border-bottom: 1px solid #222837;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.modalBody{
+  padding: 12px 14px;
+  overflow: auto;
+}
+
+.reportChart{
+  width: 100%;
+  height: 220px;
+  background: #0f1115;
+  border: 1px solid #222837;
+  border-radius: 10px;
+}
+
+
+.reportLog{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.reportBottom{
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.reportBottom .reportLog{
+  flex: 1;
+  margin: 0;
+}
+.reportSummary{
+  width: 250px;
+  border: 1px solid #222837;
+  border-radius: 10px;
+  background: #0f1115;
+  padding: 10px 12px;
+  color: #e7eaf0;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .28s ease, transform .28s ease;
+}
+.reportSummary.show{
+  opacity: 1;
+  transform: translateY(0);
+}
+.reportSummaryTitle{
+  font-weight: 800;
+  letter-spacing: .06em;
+  font-size: 12px;
+  opacity: .75;
+  margin-bottom: 6px;
+}
+.reportSummaryRow{
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 0;
+}
+.reportSummaryRow .k{
+  opacity: .8;
+  font-size: 12px;
+}
+.reportSummaryRow .v{
+  font-weight: 700;
+  font-size: 14px;
+  text-align: right;
+}
+
+.pageListModalContent{
+  width: min(1120px, 97vw);
+}
+.pageListTable{
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 12px;
+}
+.pageListTable th,
+.pageListTable td{
+  border: 1px solid #222837;
+  padding: 7px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+.pageListTable th{
+  background: #1a2236;
+  font-weight: 700;
+}
+.pageListTable .colPageNo{ width: 48px; }
+.pageListTable .colPageTitle{ width: calc(100% - 48px - 220px - 120px - 160px - 60px); }
+.pageListTable .colPageUrl{ width: 220px; }
+.pageListTable .colPagePrev{ width: 120px; }
+.pageListTable .colPageKw{ width: 160px; }
+.pageListTable .colPageAct{ width: 60px; }
+.pageListTable td:nth-child(1), .pageListTable th:nth-child(1){ width: 48px; }
+.pageListTable td:nth-child(6), .pageListTable th:nth-child(6){ width: 60px; }
+.pageListUrl{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pageListTable td:nth-child(4){
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pageListOpenBtn{
+  min-width: 44px;
+  padding: 5px 8px;
+  white-space: nowrap;
+}
+.pageListEmpty{
+  text-align: center;
+  color: #9aa4bd;
+  padding: 12px;
+}
+
+@media (max-width: 720px){
+  .reportBottom{ flex-wrap: wrap; }
+  .reportSummary{ width: 100%; }
+  .pageListModalContent{
+    width: min(98vw, 98vw);
+  }
+  .pageListTable{
+    font-size: 11px;
+  }
+}
+
+
+
+/* game list interactions */
+.gameItem:hover{ border-color: #33405f; }
+.gameItem.selected{
+  border-color: #5a77ff;
+  box-shadow: inset 0 0 0 2px #5a77ff;
+  background: #1a2540;
+}
+
+
+/* ---------- Header layout ---------- */
+header.top{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+header.top .topLeft{ min-width: 280px; }
+header.top .topRight{
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.storageStat{
+  font-size: 12px;
+  opacity: .9;
+  padding: 2px 8px;
+  border: 1px solid rgba(0,0,0,.18);
+  border-radius: 999px;
+  user-select: none;
+  white-space: nowrap;
+}
+.topRight button{ white-space: nowrap; }
+
+/* ---------- Game item layout (override) ---------- */
+.giBottomRight .meta{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Progress badges ---------- */
+.rowBadges{
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  font-size: 18px;
+  line-height: 1;
+  white-space: nowrap;
+  min-height: 18px;
+}
+.rowBadges .badge{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  user-select: none;
+  filter: drop-shadow(0 1px 0 rgba(0,0,0,.25));
+}
+
+/* ---------- Spoiler toggle ---------- */
+.spoilerToggle{
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  transition: background .15s, border-color .15s;
+}
+.spoilerToggle:hover{
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.25);
+}
+.spoilerToggle input[type="checkbox"]{
+  accent-color: #5a77ff;
+  margin: 0;
+}
+.spoilerToggle span{
+  opacity: .9;
+}
+.hideSpoilers{
+  display: none !important;
+}
