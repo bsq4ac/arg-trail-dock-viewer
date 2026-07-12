@@ -8,6 +8,7 @@
     games: {},
     pagesByGame: {},
     reportsByGame: {},
+    globalMemosByGame: {},
     selectedId: null,
     sourceLabel: "未読込",
   };
@@ -18,6 +19,7 @@
     activeMeta: document.getElementById("activeGameMeta"),
     viewerStats: document.getElementById("viewerStats"),
     viewerSource: document.getElementById("viewerSource"),
+    btnExportGamesCsv: document.getElementById("btnExportGamesCsv"),
     btnHelp: document.getElementById("btnHelp"),
     btnLoadJson: document.getElementById("btnLoadJson"),
     btnClearLocal: document.getElementById("btnClearLocal"),
@@ -48,6 +50,14 @@
     const m = Math.floor((sec % 3600) / 60);
     const s = sec % 60;
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }
+
+  function formatCsvDateTime(ts) {
+    const n = Number(ts);
+    if (!Number.isFinite(n) || n <= 0) return "";
+    const d = new Date(n);
+    const p = (v) => String(v).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
   }
 
   function ensureGame(g, id) {
@@ -84,6 +94,7 @@
     const games = {};
     const pagesByGame = {};
     const reportsByGame = {};
+    const globalMemosByGame = {};
 
     if (payload.type === "arg_viewer_snapshot" && payload.data && typeof payload.data === "object") {
       const d = payload.data;
@@ -96,7 +107,10 @@
       for (const [id, events] of Object.entries(d.reportsByGame ?? {})) {
         reportsByGame[id] = Array.isArray(events) ? events : [];
       }
-      return { games, pagesByGame, reportsByGame };
+      for (const id of Object.keys(games)) {
+        globalMemosByGame[id] = String(d.globalMemosByGame?.[id] ?? "");
+      }
+      return { games, pagesByGame, reportsByGame, globalMemosByGame };
     }
 
     if (payload.type === "arg_game_export" && payload.data && typeof payload.data === "object") {
@@ -107,7 +121,8 @@
       games[id] = game;
       pagesByGame[id] = Array.isArray(d.pages) ? d.pages : [];
       reportsByGame[id] = Array.isArray(d.report) ? d.report : [];
-      return { games, pagesByGame, reportsByGame };
+      globalMemosByGame[id] = String(d.globalMemo ?? "");
+      return { games, pagesByGame, reportsByGame, globalMemosByGame };
     }
 
     const rawData = (payload.data && typeof payload.data === "object") ? payload.data : payload;
@@ -117,8 +132,9 @@
         games[id] = ensureGame(g, id);
         pagesByGame[id] = Array.isArray(rawData[`arg_pages_${id}`]) ? rawData[`arg_pages_${id}`] : [];
         reportsByGame[id] = Array.isArray(rawData[`arg_report_${id}`]) ? rawData[`arg_report_${id}`] : [];
+        globalMemosByGame[id] = String(rawData[`arg_globalmemo_${id}`] ?? "");
       }
-      return { games, pagesByGame, reportsByGame };
+      return { games, pagesByGame, reportsByGame, globalMemosByGame };
     }
 
     throw new Error("unsupported_schema");
@@ -133,6 +149,7 @@
         games: state.games,
         pagesByGame: state.pagesByGame,
         reportsByGame: state.reportsByGame,
+        globalMemosByGame: state.globalMemosByGame,
       },
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -147,6 +164,7 @@
       state.games = snap.games;
       state.pagesByGame = snap.pagesByGame;
       state.reportsByGame = snap.reportsByGame;
+      state.globalMemosByGame = snap.globalMemosByGame;
       state.selectedId = Object.keys(state.games)[0] || null;
       state.sourceLabel = "localStorage";
       return true;
@@ -160,6 +178,7 @@
     state.games = snap.games;
     state.pagesByGame = snap.pagesByGame;
     state.reportsByGame = snap.reportsByGame;
+    state.globalMemosByGame = snap.globalMemosByGame;
     state.selectedId = Object.keys(state.games)[0] || null;
     state.sourceLabel = sourceLabel || "JSON";
     saveLocal();
@@ -217,12 +236,72 @@
     downloadTextFile(csvWithBom, filename, "text/csv;charset=utf-8");
   }
 
+  function exportGamesCsv() {
+    const games = Object.values(state.games)
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    if (!games.length) return;
+
+    const headers = [
+      "ゲーム追加日",
+      "タイトル",
+      "作者",
+      "タグ",
+      "導入URL",
+      "トップURL",
+      "ヒントURL",
+      "検索URL1",
+      "検索URL2",
+      "クリア状況",
+      "コンプ状況",
+      "クリア日時",
+      "コンプ日時",
+    ];
+    const lines = [
+      headers.map(escapeCsvCell).join(","),
+      ...games.map((game) => {
+        const badges = game.progressBadges ?? {};
+        return [
+          formatCsvDateTime(game.createdAt),
+          game.title,
+          game.author,
+          Array.isArray(game.tags) ? game.tags.join(" / ") : "",
+          game.introUrl,
+          game.topUrl,
+          game.hintUrl,
+          game.searchUrl1,
+          game.searchUrl2,
+          badges.clearAt ? "済" : "未",
+          badges.completeAt ? "済" : "未",
+          formatCsvDateTime(badges.clearAt),
+          formatCsvDateTime(badges.completeAt),
+        ].map(escapeCsvCell).join(",");
+      }),
+    ];
+
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+    downloadTextFile(`\uFEFF${lines.join("\r\n")}`, `ARG_Trail_Dock_ゲーム一覧_${stamp}.csv`, "text/csv;charset=utf-8");
+  }
+
+  function exportGlobalMemoTxt(game, memo) {
+    const text = String(memo ?? "");
+    if (!text) return;
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+    const safeTitle = String(game?.title ?? "ARG").replace(/[\\/:*?"<>|]/g, "_").slice(0, 60);
+    const filename = `ARG_Trail_Dock_${safeTitle}_共通メモ_${stamp}.txt`;
+    downloadTextFile(`\uFEFF${text}`, filename, "text/plain;charset=utf-8");
+  }
+
   function renderStats() {
     if (!els.viewerStats) return;
     const fn = viewerCore.computeGlobalStats;
     const stats = (typeof fn === "function") ? fn(state.games) : { totalTimeText: "--:--:--", gamesCount: 0, clearCount: 0, compCount: 0 };
     els.viewerStats.textContent = `🕒${stats.totalTimeText} | 🎮${stats.gamesCount} 🎖${stats.clearCount} 🏆${stats.compCount}`;
     if (els.viewerSource) els.viewerSource.textContent = state.sourceLabel;
+    if (els.btnExportGamesCsv) els.btnExportGamesCsv.disabled = Object.keys(state.games).length === 0;
   }
 
   function renderGames() {
@@ -356,17 +435,17 @@
     btnPages.textContent = "ページ一覧";
     btnPages.onclick = () => showPageListModal(g, state.pagesByGame[id] || []);
 
-    const btnCsv = document.createElement("button");
-    btnCsv.className = "secondary";
-    btnCsv.textContent = "CSV出力";
-    btnCsv.onclick = () => exportGameCsv(g, state.pagesByGame[id] || []);
+    const btnGlobalMemo = document.createElement("button");
+    btnGlobalMemo.className = "secondary";
+    btnGlobalMemo.textContent = "共通メモ閲覧";
+    btnGlobalMemo.onclick = () => showGlobalMemoViewModal(g, state.globalMemosByGame[id] || "");
 
     const btnIntro = document.createElement("button");
     btnIntro.className = "secondary";
     btnIntro.textContent = "導入ページを開く";
     btnIntro.onclick = () => openExternal(g.introUrl);
 
-    row.append(btnReport, btnPages, btnCsv, btnIntro);
+    row.append(btnReport, btnPages, btnGlobalMemo, btnIntro);
     wrap.appendChild(row);
     area.appendChild(wrap);
   }
@@ -615,6 +694,52 @@
     }
   }
 
+  function showGlobalMemoViewModal(game, memo) {
+    document.querySelectorAll(".modalOverlay.globalMemoViewModal").forEach((n) => n.remove());
+    const text = String(memo ?? "");
+    const overlay = document.createElement("div");
+    overlay.className = "modalOverlay globalMemoViewModal";
+    overlay.innerHTML = `
+      <div class="modal globalMemoViewModalContent" role="dialog" aria-modal="true" aria-labelledby="globalMemoViewTitle">
+        <div class="modalHead">
+          <strong id="globalMemoViewTitle">共通メモ（閲覧専用）</strong>
+          <div class="inline" style="gap:6px; flex-wrap:nowrap;">
+            <button type="button" id="btnExportGlobalMemoTxt" class="secondary">TXT出力</button>
+            <button type="button" id="btnCloseGlobalMemoView" class="secondary">閉じる</button>
+          </div>
+        </div>
+        <div class="modalBody globalMemoViewBody">
+          <textarea id="globalMemoViewText" class="globalMemoViewTextarea" readonly aria-label="共通メモの内容" placeholder="共通メモはありません。"></textarea>
+        </div>
+      </div>
+    `;
+
+    const close = () => {
+      document.removeEventListener("keydown", onKeydown);
+      overlay.remove();
+    };
+    const onKeydown = (e) => {
+      if (e.key === "Escape") close();
+    };
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) close();
+    });
+    const memoEl = overlay.querySelector("#globalMemoViewText");
+    if (memoEl) memoEl.value = text;
+    const btnExport = overlay.querySelector("#btnExportGlobalMemoTxt");
+    if (btnExport) {
+      btnExport.disabled = !text;
+      btnExport.onclick = () => exportGlobalMemoTxt(game, text);
+    }
+    const btnClose = overlay.querySelector("#btnCloseGlobalMemoView");
+    if (btnClose) btnClose.onclick = close;
+
+    document.body.appendChild(overlay);
+    document.addEventListener("keydown", onKeydown);
+    btnClose?.focus();
+  }
+
   function showPageListModal(game, pages) {
     document.querySelectorAll(".modalOverlay.pageListModal").forEach(n => n.remove());
     const rows = (typeof viewerCore.buildPageListRows === "function")
@@ -627,7 +752,10 @@
       <div class="modal pageListModalContent" role="dialog" aria-modal="true">
         <div class="modalHead">
           <div style="font-weight:700;"><span id="pageListTitle"></span></div>
-          <button id="btnClosePageList" class="secondary">閉じる</button>
+          <div class="inline" style="gap:6px; flex-wrap:nowrap;">
+            <button id="btnExportPageListCsv" class="secondary">CSVを出力（Excel取込用）</button>
+            <button id="btnClosePageList" class="secondary">閉じる</button>
+          </div>
         </div>
         <div class="modalBody">
         <div class="small" style="margin-bottom:8px; opacity:.85;">番号 / タイトル / URL / 遷移ワード / 発見キーワード</div>
@@ -664,6 +792,8 @@
     if (titleEl) titleEl.textContent = `ページ一覧 : ${String(game?.title ?? "(無題)")}`;
     const btnClose = overlay.querySelector("#btnClosePageList");
     if (btnClose) btnClose.onclick = close;
+    const btnExportCsv = overlay.querySelector("#btnExportPageListCsv");
+    if (btnExportCsv) btnExportCsv.onclick = () => exportGameCsv(game, pages);
 
     const body = overlay.querySelector("#pageListBody");
     if (!body) return;
@@ -731,7 +861,7 @@
         <div class="modalBody">
           <div style="line-height:1.7;">
             <p>これは、ブラウザ拡張「ARG Trail Dock」からエクスポートしたバックアップJSON（<code>ARG_Trail_Dock_backup_～.JSON</code>）を読み込み、拡張本体がなくてもプレイ記録を閲覧できるページです。読み込んだデータはブラウザのローカルストレージにのみ保存され、サーバー等へ保存・送信されることはありません。</p>
-            <p>「CSV出力」ボタンでは、ARG作品ごとに、登録したページ情報・遷移ワード・発見キーワードなどをCSVとして出力できます。Excelへデータを移行する際などにご利用ください。</p>
+            <p>「ゲーム一覧CSV」ではゲーム情報を一覧で出力できます。ページ一覧の「CSVを出力（Excel取込用）」では、ARG作品ごとに登録したページ情報・遷移ワード・発見キーワードなどを出力できます。「共通メモ閲覧」では共通メモの確認とTXT出力ができます。Excelや他ツールへデータを移行する際などにご利用ください。</p>
           </div>
         </div>
       </div>
@@ -744,6 +874,10 @@
   }
 
   function setupEvents() {
+    if (els.btnExportGamesCsv) {
+      els.btnExportGamesCsv.onclick = exportGamesCsv;
+    }
+
     if (els.btnHelp) {
       els.btnHelp.onclick = () => showHelpModal();
     }
@@ -774,6 +908,7 @@
         state.games = {};
         state.pagesByGame = {};
         state.reportsByGame = {};
+        state.globalMemosByGame = {};
         state.selectedId = null;
         state.sourceLabel = "未読込";
         renderAll();
