@@ -753,7 +753,7 @@
         <div class="modalHead">
           <div style="font-weight:700;"><span id="pageListTitle"></span></div>
           <div class="inline" style="gap:6px; flex-wrap:nowrap;">
-            <button id="btnExportPageListCsv" class="secondary">CSVを出力（Excel取込用）</button>
+            <button id="btnExportPageListCsv" class="secondary">CSVを出力</button>
             <button id="btnClosePageList" class="secondary">閉じる</button>
           </div>
         </div>
@@ -861,7 +861,7 @@
         <div class="modalBody">
           <div style="line-height:1.7;">
             <p>これは、ブラウザ拡張「ARG Trail Dock」からエクスポートしたバックアップJSON（<code>ARG_Trail_Dock_backup_～.JSON</code>）を読み込み、拡張本体がなくてもプレイ記録を閲覧できるページです。読み込んだデータはブラウザのローカルストレージにのみ保存され、サーバー等へ保存・送信されることはありません。</p>
-            <p>「ゲーム一覧CSV」ではゲーム情報を一覧で出力できます。ページ一覧の「CSVを出力（Excel取込用）」では、ARG作品ごとに登録したページ情報・遷移ワード・発見キーワードなどを出力できます。「共通メモ閲覧」では共通メモの確認とTXT出力ができます。Excelや他ツールへデータを移行する際などにご利用ください。</p>
+            <p>「ゲーム一覧CSV」ではゲーム情報を一覧で保存できます。ページ一覧では登録したページ情報をCSVとして保存でき、「共通メモ閲覧」では共通メモの確認とTXT出力ができます。</p>
           </div>
         </div>
       </div>
